@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from centrality_analysis import centrality_summary_text, compute_centralities, save_centrality_outputs
-from community_embeddings import save_all_embedding_plots
+from community_embeddings import save_all_embedding_plots, save_kmeans_on_embedding_plots
 from extra_tool_analysis import save_extra_tool_outputs
 from load_network import giant_weakly_connected_subgraph, load_ythan
 from visualize_network import (
@@ -103,6 +103,12 @@ def main() -> None:
 
     plotted = save_all_embedding_plots(G_wcc, comm.membership, OUT, prefix="ythan", seed=7)
     (OUT / "ythan_embedding_methods.json").write_text(json.dumps({"plotted_methods": plotted}, indent=2))
+
+    kmeans_summary = save_kmeans_on_embedding_plots(
+        G_wcc, OUT, prefix="ythan", seed=7, embed_dim_cluster=15, k_min=2, k_max=15
+    )
+    print("\nK-means on embeddings (best k by modularity Q):")
+    print(kmeans_summary.to_string(index=False))
 
     print("Done.")
     print(f"Wrote outputs to: {OUT}")

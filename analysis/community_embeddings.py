@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 — registers 3D projection
 
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS, Isomap, SpectralEmbedding, TSNE
 
@@ -113,13 +114,17 @@ def embed_tsne(UG: nx.Graph, dim: int, seed: int = 7) -> tuple[list[int], np.nda
     """
     nodes = _sorted_nodes(UG)
     A = _adjacency_matrix(UG, nodes)
-    pre = PCA(n_components=min(10, len(nodes) - 1), random_state=seed).fit_transform(A)
+    pre_dim = min(len(nodes) - 1, max(dim, 2))
+    pre = PCA(n_components=pre_dim, random_state=seed).fit_transform(A)
+    # Barnes-Hut t-SNE only supports n_components <= 3; use exact method for higher dims.
+    method = "exact" if dim > 3 else "barnes_hut"
     X = TSNE(
         n_components=dim,
         random_state=seed,
         init="pca",
         learning_rate="auto",
         perplexity=min(30, len(nodes) - 1),
+        method=method,
     ).fit_transform(pre)
     return nodes, X
 
@@ -145,6 +150,56 @@ EMBEDDING_METHODS: dict[str, Callable[..., tuple[list[int], np.ndarray]]] = {
     "tsne": embed_tsne,
     "umap": embed_umap,
 }
+
+
+def _labels_to_communities(nodes: list[int], labels: np.ndarray) -> list[set[int]]:
+    communities: list[set[int]] = []
+    for cid in sorted(np.unique(labels)):
+        communities.append({nodes[i] for i in range(len(nodes)) if labels[i] == cid})
+    return communities
+
+
+def modularity_for_labels(UG: nx.Graph, nodes: list[int], labels: np.ndarray) -> float:
+    communities = _labels_to_communities(nodes, labels)
+    return float(nx.algorithms.community.modularity(UG, communities))
+
+
+def membership_from_labels(nodes: list[int], labels: np.ndarray) -> pd.DataFrame:
+    return pd.DataFrame({"node": nodes, "community_id": labels.astype(int)})
+
+
+def select_k_by_modularity(
+    UG: nx.Graph,
+    nodes: list[int],
+    X: np.ndarray,
+    k_min: int = 2,
+    k_max: int = 15,
+    seed: int = 7,
+) -> tuple[int, np.ndarray, float, pd.DataFrame]:
+    """
+    Run k-means for each k in [k_min, k_max] on embedding X, score partitions by modularity Q,
+    return the best k and its labels.
+    """
+    k_max = min(k_max, len(nodes) - 1)
+    if k_max < k_min:
+        raise ValueError("Not enough nodes to scan k values.")
+
+    rows: list[dict] = []
+    best_q = -np.inf
+    best_k = k_min
+    best_labels = np.zeros(len(nodes), dtype=int)
+
+    for k in range(k_min, k_max + 1):
+        km = KMeans(n_clusters=k, random_state=seed, n_init=10)
+        labels = km.fit_predict(X)
+        q = modularity_for_labels(UG, nodes, labels)
+        rows.append({"k": k, "modularity_Q": q})
+        if q > best_q:
+            best_q = q
+            best_k = k
+            best_labels = labels
+
+    return best_k, best_labels, float(best_q), pd.DataFrame(rows)
 
 
 def _community_colors(membership: pd.DataFrame, nodes: list[int]) -> list:
@@ -236,6 +291,75 @@ def plot_embedding_3d(
     fig.tight_layout()
     fig.savefig(out_path, dpi=220)
     plt.close(fig)
+
+
+def save_kmeans_on_embedding_plots(
+    G: nx.DiGraph,
+    out_dir: str | Path,
+    prefix: str,
+    seed: int = 7,
+    embed_dim_cluster: int = 15,
+    k_min: int = 2,
+    k_max: int = 15,
+) -> pd.DataFrame:
+    """
+    For each eigen/manifold embedding:
+      1) embed nodes in `embed_dim_cluster` dimensions
+      2) k-means for k = k_min..k_max, pick k maximizing modularity Q
+      3) plot 2D/3D projections colored by the best k-means partition
+    """
+    out_dir = Path(out_dir)
+    UG = _undirected_projection(G)
+    n = UG.number_of_nodes()
+    dim_hi = min(embed_dim_cluster, max(2, n - 1))
+
+    summary_rows: list[dict] = []
+
+    for name, fn in EMBEDDING_METHODS.items():
+        try:
+            nodes, X_hi = fn(UG, dim_hi, seed=seed)
+            _, X2 = fn(UG, 2, seed=seed)
+            _, X3 = fn(UG, 3, seed=seed)
+        except ImportError:
+            continue
+
+        best_k, labels, best_q, scan = select_k_by_modularity(
+            UG, nodes, X_hi, k_min=k_min, k_max=k_max, seed=seed
+        )
+        scan.to_csv(out_dir / f"{prefix}_kmeans_Q_scan_{name}.csv", index=False)
+
+        membership = membership_from_labels(nodes, labels)
+        tag = f"{name}_kmeans_k{best_k}"
+
+        plot_embedding_2d(
+            G,
+            nodes,
+            X2,
+            membership,
+            out_dir / f"{prefix}_embed2d_{tag}.png",
+            title=f"K-means on {name} embedding (best k={best_k}, Q={best_q:.3f})",
+        )
+        plot_embedding_3d(
+            G,
+            nodes,
+            X3,
+            membership,
+            out_dir / f"{prefix}_embed3d_{tag}.png",
+            title=f"K-means on {name} embedding (best k={best_k}, Q={best_q:.3f})",
+        )
+
+        summary_rows.append(
+            {
+                "embedding_method": name,
+                "embed_dim_for_kmeans": dim_hi,
+                "best_k": int(best_k),
+                "best_modularity_Q": best_q,
+            }
+        )
+
+    summary = pd.DataFrame(summary_rows).sort_values("best_modularity_Q", ascending=False)
+    summary.to_csv(out_dir / f"{prefix}_kmeans_embedding_summary.csv", index=False)
+    return summary
 
 
 def save_all_embedding_plots(
