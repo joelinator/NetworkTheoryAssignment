@@ -1,0 +1,4 @@
+networkx>=3.0
+numpy>=1.23
+pandas>=2.0
+matplotlib>=3.7

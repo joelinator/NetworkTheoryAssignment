@@ -1,0 +1,21 @@
+# Exclude all Markdown files (assignment notes stay local)
+*.md
+
+# Python / Jupyter
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+.venv/
+venv/
+
+# Generated outputs (notebook regenerates these)
+outputs/
+
+# OS / editor
+.DS_Store
+*.swp
+*~
+
+# Do not commit other datasets (only data/Ythan.txt is tracked)
+Net data 2026/
