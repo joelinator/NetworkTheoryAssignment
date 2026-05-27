@@ -174,18 +174,27 @@ def save_extra_tool_outputs(
         fig.savefig(out_dir / f"{prefix}_community_sizes_{safe_method}.png", dpi=200)
         plt.close(fig)
 
+        note = ""
+        if "girvan_newman" in cr.method:
+            note = (
+                "First GN split is degenerate (one giant block + isolates); "
+                "Q≈0 — not used for interpretation. Prefer Louvain/greedy."
+            )
         summary_rows.append(
             {
                 "method": cr.method,
                 "n_communities": len(cr.communities),
                 "modularity_Q": cr.modularity,
                 "largest_community_size": max(sizes) if sizes else 0,
+                "note": note,
             }
         )
 
-    pd.DataFrame(summary_rows).sort_values("modularity_Q", ascending=False).to_csv(
-        out_dir / f"{prefix}_communities_methods_summary.csv", index=False
-    )
+    summary = pd.DataFrame(summary_rows).sort_values("modularity_Q", ascending=False)
+    summary.to_csv(out_dir / f"{prefix}_communities_methods_summary.csv", index=False)
+
+    # For reporting: exclude Girvan–Newman from "best method" comparison
+    comm_results_compare = [c for c in comm_results if "girvan" not in c.method.lower()]
 
     troph = estimate_trophic_levels(G)
     troph.node_table.to_csv(out_dir / f"{prefix}_trophic_levels.csv", index=False)
@@ -200,7 +209,7 @@ def save_extra_tool_outputs(
     fig.savefig(out_dir / f"{prefix}_trophic_level_hist.png", dpi=200)
     plt.close(fig)
 
-    # Return the best-modularity partition as the "main" community result
-    best = max(comm_results, key=lambda r: r.modularity)
+    # Return the best-modularity partition (excluding degenerate GN first split)
+    best = max(comm_results_compare, key=lambda r: r.modularity)
     return best, troph
 

@@ -1,0 +1,135 @@
+node_id,species_name,common_name,category
+1,Cryptocotyle lingua,Cryptocotyle lingua,parasite
+2,Himasthla elongata,Himasthla elongata,parasite
+3,Renicola roscovita,Renicola roscovita,parasite
+4,Cercariae lebouri,Cercariae lebouri,parasite
+5,Podocotyle staffordi,Podocotyle staffordi,parasite
+6,Cryptocotyle jejuna,Cryptocotyle jejuna,parasite
+7,Himasthla continua,Himasthla continua,parasite
+8,Maritrema oocysta,Maritrema oocysta,parasite
+9,Maritrema subdolum,Maritrema subdolum,parasite
+10,Levinseniella sp. no.17,Levinseniella sp. no.17,parasite
+11,Microphallid sp. no.15,Microphallid sp. no.15,parasite
+12,Notocotyledae sp. no.14,Notocotyledae sp. no.14,parasite
+13,Himasthla interrupt,Himasthla interrupt,parasite
+14,Profilicollis botulus,Profilicollis botulus,parasite
+15,Amidostomum sp.,Amidostomum sp.,parasite
+16,Haploparaksis crassirostris,Haploparaksis crassirostris,parasite
+17,Ophryocotyle insignis,Ophryocotyle insignis,parasite
+18,Psilostomum brevicolle,Psilostomum brevicolle,parasite
+19,Catatropis verrucosa,Catatropis verrucosa,parasite
+20,Parvatrema affine,Parvatrema affine,parasite
+21,Apophallus lerouxi,Apophallus lerouxi,parasite
+22,Levinseniella brachysoma,Levinseniella brachysoma,parasite
+23,Maritrema humile,Maritrema humile,parasite
+24,Maritrema gratiosum,Maritrema gratiosum,parasite
+25,Hemiuris communis,Hemiuris communis,parasite
+26,Lecithaster gibbosus,Lecithaster gibbosus,parasite
+27,Derogenes varicus,Derogenes varicus,parasite
+28,Opacelididii sp.,Opacelididii sp.,parasite
+29,Tetraphyllidean larvae,Tetraphyllidean larvae,parasite
+30,Cestode sp.1,Cestode sp.1,parasite
+31,Lacunovermis macomae,Lacunovermis macomae,parasite
+32,Hysterothylacium aduncum,Hysterothylacium aduncum,parasite
+33,Cucullanus heterochrous,Cucullanus heterochrous,parasite
+34,Anisakis sp.,Anisakis sp.,parasite
+35,Zoogonoides viviparus,Zoogonoides viviparus,parasite
+36,Spiruroid larvae,Spiruroid larvae,parasite
+37,Cucullanus minutus,Cucullanus minutus,parasite
+38,Pomphorynchus sp.,Pomphorynchus sp.,parasite
+39,Corynosoma strumosum,Corynosoma strumosum,parasite
+40,Echinorynchus gadi,Echinorynchus gadi,parasite
+41,Hymenolepis sp. 1,Hymenolepis sp. 1,parasite
+42,Spelotrema claviforma,Spelotrema claviforma,parasite
+43,Lutra lutra,Otter,free-living
+44,Phalacrocorax carbo,Cormorant,free-living
+45,Ardea cinerea,Heron,free-living
+46,Cygnus olor,Mute swan,free-living
+47,Tadorna tadorna,Shelduck,free-living
+48,Anas penelope,Wigeon,free-living
+49,Somateria mollissima,Eider,free-living
+50,Somateria mollissima (juvenile),Eider juvenile,free-living
+51,Haematopus ostralegus,Oystercatcher,free-living
+52,Charadrius hiaticula,Ringed plover,free-living
+53,Pluvialis apricaria,Golden plover,free-living
+54,Pluvialis squatarola,Grey plover,free-living
+55,Vanellus vanellus,Lapwing,free-living
+56,Calidris alpina,Dunlin,free-living
+57,Limosa lapponica,Bar-tailed godwit,free-living
+58,Numenius arquata,Curlew,free-living
+59,Tringa totanus,Redshank,free-living
+60,Arenaria interpres,Turnstone,free-living
+61,Larus canus,Common gull,free-living
+62,Larus ridibundus,Black-headed gull,free-living
+63,Larus argentatus,Herring gull,free-living
+64,Larus marinus,Great black-backed gull,free-living
+65,Sterna sandvicensis,Sandwich tern,free-living
+66,Sterna hirundo,Common tern,free-living
+67,Sterna paradisaea,Arctic tern,free-living
+68,Corvus frugilegus,Rook,free-living
+69,Corvus corone,Crow,free-living
+70,Sprattus sprattus,Spratt,free-living
+71,Clupea harengus,Herring,free-living
+72,Anguilla anguilla,Eel,free-living
+73,Syngnathus rostellatus,Nilsson's pipefish,free-living
+74,Pollachius virens,Saithe,free-living
+75,Ciliata mustella,Five-bearded rockling,free-living
+76,Ammodytes tobianus,Sandeel,free-living
+77,Pholis gunnellus,Butterfish,free-living
+78,Zoarces viviparus,Viviparous blenny,free-living
+79,Pomatoschistus minutus,Sand goby,free-living
+80,Pomatoschistus microps,Common goby,free-living
+81,Myxocephalus scorpius,Fatherlasher,free-living
+82,Agonus cataphractus,Pogge,free-living
+83,Gasterosteus aculeatus,Three-spined stickleback,free-living
+84,Pleuronectes platessa (juvenile),Plaice juvenile,free-living
+85,Platichthys flesus,Flounder,free-living
+86,Platichthys flesus (juvenile),Flounder juvenile,free-living
+87,Salmo trutta,Trout,free-living
+88,Crangon crangon,Brown shrimp,free-living
+89,Crangon crangon,Brown shrimp,free-living
+90,Nereis diversicolor,Ragworm,free-living
+91,Nereis virens,King ragworm,free-living
+92,Phyllodoce mucosa,Phyllodoce mucosa,free-living
+93,Eteone longa,Eteone longa,free-living
+94,Ostracoda,Ostracods,free-living
+95,Calanoida,Calanoid copepods,free-living
+96,Harpacticoida,Harpacticoid copepods,free-living
+97,Semibalanus balanoides,Barnacles,free-living
+98,Neomysis integer,Opossum shrimp,free-living
+99,Hyale nilssoni,Hyale nilssoni,free-living
+100,Talitrus saltator,Talitrus saltator,free-living
+101,Corophium volutator,Corophium volutator,free-living
+102,Bathyporeia pilosa,Bathyporeia pilosa,free-living
+103,Gammarus sp.,Gammarus sp.,free-living
+104,Idotea emarginata,Idotea emarginata,free-living
+105,Jaera albifrons,Jaera albifrons,free-living
+106,Eurydice pulchra,Eurydice pulchra,free-living
+107,Nototropis sp.,Nototropis sp.,free-living
+108,Pygospio elegans,Pygospio elegans,free-living
+109,Parathemisto sp.,Parathemisto sp.,free-living
+110,Capitella capitata,Capitella capitata,free-living
+111,Manayunkia aestuarina,Manayunkia aestuarina,free-living
+112,Aricia sp.,Aricia sp.,free-living
+113,Arenicola marina,Lugworm,free-living
+114,Tubificoides benedini,Tubificoides benedini,free-living
+115,Tubifex costatus,Tubifex costatus,free-living
+116,Hydrobia ulvae,Hydrobia ulvae,free-living
+117,Littorina littorea,Common periwinkle,free-living
+118,Littorina saxatilis,Rough periwinkle,free-living
+119,Alderia modesta,Alderia modesta,free-living
+120,Retusa obtusa,Retusa obtusa,free-living
+121,Mya arenaria,Soft-shell clam,free-living
+122,Macoma balthica,Baltic tellin,free-living
+123,Mytilus edulis,Common mussel,free-living
+124,Cerastoderma edule,Common cockle,free-living
+125,Nematoda,Nematodes,free-living
+126,Foraminifera,Foraminifera,free-living
+127,Chironomidae,Midge larvae,free-living
+128,Diptera (larvae),Dipteran larvae,free-living
+129,Acarina,Mites,free-living
+130,Hesionidae,Hesionidae,free-living
+131,Phytoplankton,Phytoplankton,free-living
+132,Phaeophyta,Brown algae,free-living
+133,Enteromorpha sp.,Enteromorpha (green algae),free-living
+134,P.O.M.,Particulate organic matter,free-living

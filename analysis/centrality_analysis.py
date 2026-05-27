@@ -35,11 +35,15 @@ def compute_centralities(G: nx.DiGraph) -> CentralityResult:
 
     betw = nx.betweenness_centrality(G, normalized=True, weight=None)
 
-    # Directed closeness: NetworkX provides `wf_improved` option for disconnected graphs,
-    # but we already work on the giant WCC. Still, direction can reduce reachability,
-    # so we compute in/out closeness via graph reversal.
-    closeness_out = nx.closeness_centrality(G)  # distance from node to others it can reach
+    # Directed closeness (caveat: food webs are rarely strongly connected; scores use
+    # reachable pairs only and can be inflated — see reachability report in outputs).
+    closeness_out = nx.closeness_centrality(G)
     closeness_in = nx.closeness_centrality(G.reverse(copy=False))
+
+    # Harmonic centrality: uses sum of inverse distances and is more stable when many
+    # directed paths are missing (recommended supplement for food webs).
+    harmonic_out = nx.harmonic_centrality(G)
+    harmonic_in = nx.harmonic_centrality(G.reverse(copy=False))
 
     # Spectral measures: PageRank on G and on reversed G.
     # (With prey->predator orientation, PR(G) tends to emphasize high-level predators/sinks;
@@ -55,6 +59,8 @@ def compute_centralities(G: nx.DiGraph) -> CentralityResult:
             "betweenness": [betw[n] for n in nodes],
             "closeness_in": [closeness_in[n] for n in nodes],
             "closeness_out": [closeness_out[n] for n in nodes],
+            "harmonic_in": [harmonic_in[n] for n in nodes],
+            "harmonic_out": [harmonic_out[n] for n in nodes],
             "pagerank_in": [pr_in[n] for n in nodes],
             "pagerank_out": [pr_out[n] for n in nodes],
         }
@@ -68,6 +74,8 @@ def compute_centralities(G: nx.DiGraph) -> CentralityResult:
         "betweenness",
         "closeness_in",
         "closeness_out",
+        "harmonic_in",
+        "harmonic_out",
         "pagerank_in",
         "pagerank_out",
     ]:
@@ -86,6 +94,8 @@ def compute_centralities(G: nx.DiGraph) -> CentralityResult:
             "betweenness",
             "closeness_in",
             "closeness_out",
+            "harmonic_in",
+            "harmonic_out",
             "pagerank_in",
             "pagerank_out",
         ]
@@ -126,6 +136,8 @@ def save_centrality_outputs(
         "betweenness",
         "closeness_in",
         "closeness_out",
+        "harmonic_in",
+        "harmonic_out",
         "pagerank_in",
         "pagerank_out",
     ]:
