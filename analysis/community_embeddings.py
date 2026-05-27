@@ -141,15 +141,40 @@ def embed_umap(UG: nx.Graph, dim: int, seed: int = 7) -> tuple[list[int], np.nda
     return nodes, X
 
 
-EMBEDDING_METHODS: dict[str, Callable[..., tuple[list[int], np.ndarray]]] = {
+# Graph/spectral embeddings — used for k-means clustering (NOT PCA/t-SNE on adjacency).
+KMEANS_EMBEDDING_METHODS: dict[str, Callable[..., tuple[list[int], np.ndarray]]] = {
     "laplacian_eigen": embed_laplacian_eigen,
     "adjacency_eigen": embed_adjacency_eigen,
-    "pca_adjacency": embed_pca_adjacency,
     "mds": embed_mds,
     "isomap": embed_isomap,
+}
+
+# All embedders (includes optional viz-only helpers for Louvain-colored plots).
+EMBEDDING_METHODS: dict[str, Callable[..., tuple[list[int], np.ndarray]]] = {
+    **KMEANS_EMBEDDING_METHODS,
+    "pca_adjacency": embed_pca_adjacency,
     "tsne": embed_tsne,
     "umap": embed_umap,
 }
+
+
+def project_embedding_pca(X_hi: np.ndarray, dim: int, seed: int = 7) -> np.ndarray:
+    """PCA projection of an embedding matrix — visualization only."""
+    dim = min(dim, X_hi.shape[0] - 1, X_hi.shape[1])
+    return PCA(n_components=dim, random_state=seed).fit_transform(X_hi)
+
+
+def project_embedding_tsne_2d(X_hi: np.ndarray, seed: int = 7) -> np.ndarray:
+    """t-SNE 2D projection of an embedding matrix — visualization only."""
+    perplexity = min(30, X_hi.shape[0] - 1)
+    return TSNE(
+        n_components=2,
+        random_state=seed,
+        init="pca",
+        learning_rate="auto",
+        perplexity=perplexity,
+        method="barnes_hut",
+    ).fit_transform(X_hi)
 
 
 def _labels_to_communities(nodes: list[int], labels: np.ndarray) -> list[set[int]]:
@@ -303,10 +328,10 @@ def save_kmeans_on_embedding_plots(
     k_max: int = 15,
 ) -> pd.DataFrame:
     """
-    For each eigen/manifold embedding:
+    For each graph embedding (Laplacian / adjacency eigen / MDS / Isomap):
       1) embed nodes in `embed_dim_cluster` dimensions
-      2) k-means for k = k_min..k_max, pick k maximizing modularity Q
-      3) plot 2D/3D projections colored by the best k-means partition
+      2) k-means on that embedding; scan k and pick best by modularity Q
+      3) visualize with PCA and t-SNE projections to 2D/3D (viz only, not for clustering)
     """
     out_dir = Path(out_dir)
     UG = _undirected_projection(G)
@@ -315,13 +340,8 @@ def save_kmeans_on_embedding_plots(
 
     summary_rows: list[dict] = []
 
-    for name, fn in EMBEDDING_METHODS.items():
-        try:
-            nodes, X_hi = fn(UG, dim_hi, seed=seed)
-            _, X2 = fn(UG, 2, seed=seed)
-            _, X3 = fn(UG, 3, seed=seed)
-        except ImportError:
-            continue
+    for name, fn in KMEANS_EMBEDDING_METHODS.items():
+        nodes, X_hi = fn(UG, dim_hi, seed=seed)
 
         best_k, labels, best_q, scan = select_k_by_modularity(
             UG, nodes, X_hi, k_min=k_min, k_max=k_max, seed=seed
@@ -331,21 +351,36 @@ def save_kmeans_on_embedding_plots(
         membership = membership_from_labels(nodes, labels)
         tag = f"{name}_kmeans_k{best_k}"
 
+        # 2D/3D coords are projections of the embedding used for k-means (not separate embedders).
+        X2_pca = project_embedding_pca(X_hi, 2, seed=seed)
+        X3_pca = project_embedding_pca(X_hi, 3, seed=seed)
+        X2_tsne = project_embedding_tsne_2d(X_hi, seed=seed)
+
+        base_title = f"K-means on {name} ({dim_hi}D) — k={best_k}, Q={best_q:.3f}"
+
         plot_embedding_2d(
             G,
             nodes,
-            X2,
+            X2_pca,
             membership,
-            out_dir / f"{prefix}_embed2d_{tag}.png",
-            title=f"K-means on {name} embedding (best k={best_k}, Q={best_q:.3f})",
+            out_dir / f"{prefix}_embed2d_{tag}_vizpca.png",
+            title=f"{base_title} | 2D PCA projection",
+        )
+        plot_embedding_2d(
+            G,
+            nodes,
+            X2_tsne,
+            membership,
+            out_dir / f"{prefix}_embed2d_{tag}_viztsne.png",
+            title=f"{base_title} | 2D t-SNE projection",
         )
         plot_embedding_3d(
             G,
             nodes,
-            X3,
+            X3_pca,
             membership,
-            out_dir / f"{prefix}_embed3d_{tag}.png",
-            title=f"K-means on {name} embedding (best k={best_k}, Q={best_q:.3f})",
+            out_dir / f"{prefix}_embed3d_{tag}_vizpca.png",
+            title=f"{base_title} | 3D PCA projection",
         )
 
         summary_rows.append(
@@ -354,6 +389,8 @@ def save_kmeans_on_embedding_plots(
                 "embed_dim_for_kmeans": dim_hi,
                 "best_k": int(best_k),
                 "best_modularity_Q": best_q,
+                "viz_2d": "pca+tsne",
+                "viz_3d": "pca",
             }
         )
 
@@ -368,37 +405,45 @@ def save_all_embedding_plots(
     out_dir: str | Path,
     prefix: str,
     seed: int = 7,
+    embed_dim: int = 15,
 ) -> list[str]:
     """
-    Compute and save 2D + 3D embedding plots for every available method.
-    Returns list of methods successfully plotted.
+    Louvain-colored plots: build graph embeddings, then PCA/t-SNE for 2D/3D display only.
     """
     out_dir = Path(out_dir)
     plotted: list[str] = []
     UG = _undirected_projection(G)
+    dim_hi = min(embed_dim, max(2, UG.number_of_nodes() - 1))
 
-    for name, fn in EMBEDDING_METHODS.items():
-        try:
-            nodes, X2 = fn(UG, 2, seed=seed)
-            _, X3 = fn(UG, 3, seed=seed)
-        except ImportError:
-            continue
+    for name, fn in KMEANS_EMBEDDING_METHODS.items():
+        nodes, X_hi = fn(UG, dim_hi, seed=seed)
+        X2_pca = project_embedding_pca(X_hi, 2, seed=seed)
+        X3_pca = project_embedding_pca(X_hi, 3, seed=seed)
+        X2_tsne = project_embedding_tsne_2d(X_hi, seed=seed)
 
         plot_embedding_2d(
             G,
             nodes,
-            X2,
+            X2_pca,
             membership,
-            out_dir / f"{prefix}_embed2d_{name}.png",
-            title=f"Community embedding 2D — {name}",
+            out_dir / f"{prefix}_embed2d_{name}_vizpca.png",
+            title=f"{name} ({dim_hi}D) — 2D PCA (Louvain colors)",
+        )
+        plot_embedding_2d(
+            G,
+            nodes,
+            X2_tsne,
+            membership,
+            out_dir / f"{prefix}_embed2d_{name}_viztsne.png",
+            title=f"{name} ({dim_hi}D) — 2D t-SNE (Louvain colors)",
         )
         plot_embedding_3d(
             G,
             nodes,
-            X3,
+            X3_pca,
             membership,
-            out_dir / f"{prefix}_embed3d_{name}.png",
-            title=f"Community embedding 3D — {name}",
+            out_dir / f"{prefix}_embed3d_{name}_vizpca.png",
+            title=f"{name} ({dim_hi}D) — 3D PCA (Louvain colors)",
         )
         plotted.append(name)
     return plotted
