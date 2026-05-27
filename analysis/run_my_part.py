@@ -9,8 +9,10 @@ from centrality_analysis import centrality_summary_text, compute_centralities, s
 from community_embeddings import save_all_embedding_plots, save_kmeans_on_embedding_plots
 from extra_tool_analysis import save_extra_tool_outputs
 from graph_diagnostics import basal_breakdown, save_reachability_report
+from intervality_analysis import save_intervality_outputs
 from load_network import giant_weakly_connected_subgraph, load_ythan
 from motif_analysis import save_motif_outputs
+from removal_impact import save_removal_impact_outputs
 from robustness_analysis import save_robustness_outputs
 from species_mapping import annotate_with_species, load_species_mapping
 from summarize_results import main as summarize_main
@@ -28,14 +30,22 @@ MAPPING = ROOT / "data" / "species_mapping.csv"
 OUT = ROOT / "outputs"
 
 
+def _species_line(df: pd.DataFrame, measure: str, rank: int = 1) -> str:
+    row = df[(df["measure"] == measure) & (df["rank"] == rank)]
+    if row.empty:
+        return "n/a"
+    r = row.iloc[0]
+    return f"{r['species']} (node {int(r['node'])})"
+
+
 def write_discussion_summary(
-    mapping: pd.DataFrame,
-    cent,
+    reach: dict,
     comm,
     troph,
-    reach: dict,
     basal_df: pd.DataFrame,
     robust_top: pd.DataFrame,
+    interval: dict,
+    removal_df: pd.DataFrame,
 ) -> None:
     top_species = pd.read_csv(OUT / "ythan_top_nodes_with_species.csv")
     lines = [
@@ -59,35 +69,59 @@ def write_discussion_summary(
             lines.append(
                 f"    {int(r['rank'])}. {r['species']} ({r['category']}) — node {int(r['node'])}"
             )
+
+    litt = removal_df[removal_df["node"] == 118]
+    litt_note = litt.iloc[0]["interpretation_note"] if len(litt) else "see removal_impact.csv"
+
     lines.extend(
         [
             "",
-            "KEY ECOLOGICAL READINGS:",
-            "  • Generalist feeders: Littorina saxatilis (118), Macoma balthica (122), Nematoda (124) — high in-degree.",
-            "  • Parasite transmission hubs: Cercariae lebouri (3), Cryptocotyle jejuna (5), Parvatrema affine (19) — high out-degree.",
-            "  • Connector: Littorina saxatilis (118) — highest betweenness; cascade removal impact lower than key parasites.",
-            "  • Phaeophyta / brown algae (132): highest PageRank-in — primary producer channelling",
-            "    many trophic paths in this parasite-rich web (Huxham et al.); not a vertebrate apex predator.",
-            "  • Intervality: parasite-heavy Ythan webs are known to violate simple cascade/interval models.",
+            "KEY ECOLOGICAL READINGS (from outputs, not hard-coded):",
+            f"  • Generalist feeders (in-degree): {_species_line(top_species, 'in_degree', 1)}, "
+            f"{_species_line(top_species, 'in_degree', 2)}, {_species_line(top_species, 'in_degree', 3)}.",
+            f"  • Parasite host hubs (out-degree): {_species_line(top_species, 'out_degree', 1)}, "
+            f"{_species_line(top_species, 'out_degree', 2)}, {_species_line(top_species, 'out_degree', 3)}.",
+            f"  • Connector (betweenness): {_species_line(top_species, 'betweenness', 1)} — {litt_note}.",
+            f"  • Energy / flow hub (PageRank-in): {_species_line(top_species, 'pagerank_in', 1)} — "
+            "primary producer channelling trophic paths (not a vertebrate apex predator).",
+            "",
+            "INTERVALITY (competition graph from shared prey):",
+            f"  • Competition graph: {interval['competition_n_edges']} edges, "
+            f"density {interval['competition_density']:.3f}.",
+            f"  • Chordal? {interval['is_chordal']}; interval? {interval['is_interval']}.",
+            f"  • {interval['cascade_interval_hypothesis']}.",
+            f"  • {interval['interpretation']}",
             "",
             f"COMMUNITIES (Louvain): k={len(comm.communities)}, Q={comm.modularity:.3f}.",
             "  Parasite-heavy Ythan web shows modular compartments (bird/mollusc/benthic channels).",
             "  Girvan–Newman first split: Q≈0, degenerate — documented, not used.",
             "",
-            f"BASAL NODES (in-degree=0): n={len(troph.basal_nodes)} ({100*len(troph.basal_nodes)/reach['n_nodes']:.0f}% of web).",
-            "  High count reflects many parasites without resolved prey links + detritus/POM categories (Huxham et al.).",
+            f"BASAL NODES (in-degree=0): n={len(troph.basal_nodes)} "
+            f"({100 * len(troph.basal_nodes) / reach['n_nodes']:.0f}% of web).",
+            "  High count reflects many parasites without resolved prey links + detritus/POM (Huxham et al.).",
         ]
     )
     if len(basal_df):
         lines.append("  Basal by category:")
         for _, r in basal_df.iterrows():
             lines.append(f"    - {r['category']}: {int(r['n_basal'])}")
+
+    lines.extend(
+        [
+            "",
+            "REMOVAL IMPACT (weak connectivity + cascade):",
+        ]
+    )
+    for _, r in removal_df.iterrows():
+        sp = r.get("species", r["node"])
+        lines.append(f"  • {sp} (node {int(r['node'])}): {r['interpretation_note']}")
+
     lines.extend(
         [
             "",
             "EXTRA TOOLS:",
-            "  • Directed motif census vs degree-preserving null (see ythan_motifs_vs_null.csv).",
-            "  • Cascade robustness: species whose removal triggers most secondary extinctions.",
+            "  • Directed motif census vs degree-preserving null (ythan_motifs_vs_null.csv).",
+            "  • Cascade robustness (ythan_robustness_cascade.csv).",
             "",
             "TOP ROBUSTNESS (cascade removals):",
         ]
@@ -134,6 +168,10 @@ def main() -> None:
 
     save_motif_outputs(G_wcc, OUT, prefix="ythan", seed=7)
     robust = save_robustness_outputs(G_wcc, OUT, prefix="ythan", species_df=cent_annot)
+    interval = save_intervality_outputs(G_wcc, OUT, prefix="ythan")
+    removal_df = save_removal_impact_outputs(
+        G_wcc, OUT, prefix="ythan", species_df=cent_annot
+    )
 
     extra_meta = {
         "best_community_method": comm.method,
@@ -142,6 +180,8 @@ def main() -> None:
         "basal_nodes_count": len(troph.basal_nodes),
         "basal_fraction": len(troph.basal_nodes) / G_wcc.number_of_nodes(),
         "largest_scc_fraction": reach["largest_scc_fraction"],
+        "is_interval_competition_graph": interval["is_interval"],
+        "competition_graph_edges": interval["competition_n_edges"],
     }
     (OUT / "ythan_extra_tool_meta.json").write_text(json.dumps(extra_meta, indent=2))
 
@@ -187,7 +227,7 @@ def main() -> None:
     )
 
     summarize_main()
-    write_discussion_summary(mapping, cent, comm, troph, reach, basal_df, robust)
+    write_discussion_summary(reach, comm, troph, basal_df, robust, interval, removal_df)
 
     print("Done.")
     print(f"Wrote outputs to: {OUT}")
