@@ -2,3 +2,6 @@ networkx>=3.0
 numpy>=1.23
 pandas>=2.0
 matplotlib>=3.7
+scikit-learn>=1.2
+# optional (enables UMAP embedding plots if installed):
+# umap-learn>=0.5
