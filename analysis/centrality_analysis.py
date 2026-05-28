@@ -21,8 +21,8 @@ def compute_centralities(G: nx.DiGraph) -> CentralityResult:
     Compute >=3 centrality measures, including a spectral measure.
 
     Notes for directed food webs:
-    - `in_degree` ~ "number of prey items" (generality / predators' diet breadth) given prey->predator direction.
-    - `out_degree` ~ "number of predators consuming this species" (vulnerability).
+    - `in_degree` ~ number of prey (predecessors) → **generality** (MacArthur–Levins diet breadth).
+    - `out_degree` ~ number of predators (successors) → **vulnerability** (how widely consumed).
     - For *directed* measures, we compute both "in" and "out" variants where meaningful:
       - in/out closeness (reachability-to vs reachability-from)
       - PageRank on G vs PageRank on reversed G (a spectral analogue of “in vs out importance”)

@@ -10,6 +10,7 @@ from community_embeddings import save_all_embedding_plots, save_kmeans_on_embedd
 from extra_tool_analysis import save_extra_tool_outputs
 from graph_diagnostics import basal_breakdown, save_reachability_report
 from intervality_analysis import save_intervality_outputs
+from random_graph_comparison import save_random_graph_comparison
 from load_network import giant_weakly_connected_subgraph, load_ythan
 from motif_analysis import save_motif_outputs
 from removal_impact import save_removal_impact_outputs
@@ -77,11 +78,13 @@ def write_discussion_summary(
         [
             "",
             "KEY ECOLOGICAL READINGS (from outputs, not hard-coded):",
-            f"  • Generalist feeders (in-degree): {_species_line(top_species, 'in_degree', 1)}, "
-            f"{_species_line(top_species, 'in_degree', 2)}, {_species_line(top_species, 'in_degree', 3)}.",
-            f"  • Parasite host hubs (out-degree): {_species_line(top_species, 'out_degree', 1)}, "
+            f"  • Generality (in-degree = prey count): {_species_line(top_species, 'in_degree', 1)} "
+            f"— broadest diet; not the same as vulnerability.",
+            f"  • Vulnerability (out-degree = predator count): {_species_line(top_species, 'out_degree', 1)}, "
             f"{_species_line(top_species, 'out_degree', 2)}, {_species_line(top_species, 'out_degree', 3)}.",
+            f"  • PageRank-out / cascade: {_species_line(top_species, 'pagerank_out', 3)} among top PageRank-out.",
             f"  • Connector (betweenness): {_species_line(top_species, 'betweenness', 1)} — {litt_note}.",
+            "    Betweenness (undirected paths) vs cascade (directed prey loss) can diverge.",
             f"  • Energy / flow hub (PageRank-in): {_species_line(top_species, 'pagerank_in', 1)} — "
             "primary producer channelling trophic paths (not a vertebrate apex predator).",
             "",
@@ -122,6 +125,8 @@ def write_discussion_summary(
             "EXTRA TOOLS:",
             "  • Directed motif census vs degree-preserving null (ythan_motifs_vs_null.csv).",
             "  • Cascade robustness (ythan_robustness_cascade.csv).",
+            "  • Random graph comparison: Erdős–Rényi + configuration null (ythan_random_graph_comparison.csv).",
+            "  • Motifs: over-represented chains → linear trophic hierarchy vs dense feedback loops.",
             "",
             "TOP ROBUSTNESS (cascade removals):",
         ]
@@ -172,6 +177,7 @@ def main() -> None:
     removal_df = save_removal_impact_outputs(
         G_wcc, OUT, prefix="ythan", species_df=cent_annot
     )
+    save_random_graph_comparison(G_wcc, OUT, prefix="ythan", seed=7)
 
     extra_meta = {
         "best_community_method": comm.method,

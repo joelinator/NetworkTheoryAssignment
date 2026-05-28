@@ -60,6 +60,11 @@ def _interpret(base: dict, after: dict, cascade_n: int) -> str:
     else:
         parts.append("web stays weakly connected as one giant component")
     parts.append(f"cascade model: {cascade_n} total extinctions")
+    if after["n_wcc"] > base["n_wcc"] and cascade_n <= 2:
+        parts.append(
+            "topology breaks (betweenness) before directed prey-loss cascades "
+            "because predators retain other prey"
+        )
     return "; ".join(parts)
 
 
