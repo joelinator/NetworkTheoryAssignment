@@ -94,6 +94,8 @@ from removal_impact import save_removal_impact_outputs
 from robustness_analysis import save_robustness_outputs
 from species_mapping import annotate_with_species, load_species_mapping
 from summarize_results import main as summarize_results
+from community_structure_viz import plot_community_adjacency_matrix, plot_community_chord_diagram
+from community_ecology_analysis import save_community_ecology_outputs
 from visualize_network import (
     compute_community_clustered_layout,
     compute_layout,
@@ -245,6 +247,63 @@ basal_df.to_csv(OUT / "ythan_basal_by_category.csv", index=False)
 display(pd.read_csv(OUT / "ythan_communities_methods_summary.csv").sort_values("modularity_Q", ascending=False))
 print(f"Best: {comm.method}, k={len(comm.communities)}, Q={comm.modularity:.3f}")
 display(basal_df)"""
+    )
+)
+
+cells.append(md("## 4a. Louvain community membership with species names (CSV)"))
+
+cells.append(
+    code(
+        """comm_ecology = save_community_ecology_outputs(
+    G_wcc,
+    comm.membership,
+    mapping,
+    annotate_with_species,
+    OUT,
+    prefix="ythan",
+)
+
+show_csv(OUT / "ythan_communities_louvain_with_species.csv", n=15)
+display(pd.read_csv(OUT / "ythan_communities_louvain_ecology_summary.csv"))
+display(pd.read_csv(OUT / "ythan_communities_louvain_label_counts.csv").head(25))"""
+    )
+)
+
+cells.append(md("### 4a(i). Community ecological interpretation scaffold"))
+
+cells.append(
+    code(
+        """p = OUT / "ythan_communities_louvain_interpretation.txt"
+if p.exists():
+    print(p.read_text())
+else:
+    print("Missing:", p)"""
+    )
+)
+
+cells.append(md("## 4b. Community structure visualizations (matrix + chord)"))
+
+cells.append(
+    code(
+        """# Adjacency matrix (nodes sorted by community) and chord diagram (community interconnections)
+plot_community_adjacency_matrix(
+    G_wcc,
+    comm.membership,
+    OUT / "ythan_community_adjacency_matrix.png",
+    title="Ythan — adjacency matrix (sorted by Louvain community)",
+    directed=True,
+)
+show_img(OUT / "ythan_community_adjacency_matrix.png")
+
+plot_community_chord_diagram(
+    G_wcc,
+    comm.membership,
+    OUT / "ythan_community_chord.png",
+    title="Ythan — chord diagram (community interconnections)",
+    min_fraction=0.02,
+    symmetric=True,
+)
+show_img(OUT / "ythan_community_chord.png")"""
     )
 )
 

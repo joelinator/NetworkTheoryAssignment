@@ -15,6 +15,11 @@ from load_network import giant_weakly_connected_subgraph, load_ythan
 from motif_analysis import save_motif_outputs
 from removal_impact import save_removal_impact_outputs
 from robustness_analysis import save_robustness_outputs
+from community_structure_viz import (
+    plot_community_adjacency_matrix,
+    plot_community_chord_diagram,
+)
+from community_ecology_analysis import save_community_ecology_outputs
 from species_mapping import annotate_with_species, load_species_mapping
 from summarize_results import main as summarize_main
 from visualize_network import (
@@ -171,6 +176,15 @@ def main() -> None:
     basal_df = basal_breakdown(G_wcc, troph_annot)
     basal_df.to_csv(OUT / "ythan_basal_by_category.csv", index=False)
 
+    comm_ecology = save_community_ecology_outputs(
+        G_wcc,
+        comm.membership,
+        mapping,
+        annotate_with_species,
+        OUT,
+        prefix="ythan",
+    )
+
     save_motif_outputs(G_wcc, OUT, prefix="ythan", seed=7)
     robust = save_robustness_outputs(G_wcc, OUT, prefix="ythan", species_df=cent_annot)
     interval = save_intervality_outputs(G_wcc, OUT, prefix="ythan")
@@ -178,6 +192,23 @@ def main() -> None:
         G_wcc, OUT, prefix="ythan", species_df=cent_annot
     )
     save_random_graph_comparison(G_wcc, OUT, prefix="ythan", seed=7)
+
+    # Community visualizations (additional)
+    plot_community_adjacency_matrix(
+        G_wcc,
+        comm.membership,
+        OUT / "ythan_community_adjacency_matrix.png",
+        title="Ythan — adjacency matrix (sorted by Louvain community)",
+        directed=True,
+    )
+    plot_community_chord_diagram(
+        G_wcc,
+        comm.membership,
+        OUT / "ythan_community_chord.png",
+        title="Ythan — chord diagram (community interconnections)",
+        min_fraction=0.02,
+        symmetric=True,
+    )
 
     extra_meta = {
         "best_community_method": comm.method,
